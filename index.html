@@ -58,26 +58,34 @@
       let selectedDay = "";
       let selectedSlot = "";
 
+      const slotBox = new sap.m.VBox({ spacing: 1 });
+
       const orderTypeSelect = new sap.m.Select({
         width: "100%",
-        items: orderTypes.map(t => new sap.ui.core.Item({ text: t })),
         change: checkReady
+      });
+      orderTypes.forEach(t => {
+        orderTypeSelect.addItem(new sap.ui.core.Item({ key: t, text: t }));
       });
 
       const divisionSelect = new sap.m.Select({
         width: "100%",
-        items: divisions.map(d => new sap.ui.core.Item({ text: d })),
         change: checkReady
       });
-
-      const slotBox = new sap.m.VBox({ spacing: 1 });
+      divisions.forEach(d => {
+        divisionSelect.addItem(new sap.ui.core.Item({ key: d, text: d }));
+      });
 
       function checkReady() {
-        if (orderTypeSelect.getSelectedItem() && divisionSelect.getSelectedItem()) {
+        const orderSelected = orderTypeSelect.getSelectedKey();
+        const divisionSelected = divisionSelect.getSelectedKey();
+
+        if (orderSelected && divisionSelected) {
           slotBox.removeAllItems();
           ["Monday","Tuesday","Wednesday","Thursday","Friday"].forEach(day => {
             const dayTitle = new sap.m.Title({ text: day, level: "H5" });
             const row = new sap.m.HBox({ wrap: true });
+
             timeslots.forEach(label => {
               const time = label.split(" ")[0];
               const code = `${day}-${time}`;
@@ -95,6 +103,7 @@
               btn.addStyleClass(className);
               row.addItem(btn);
             });
+
             slotBox.addItem(dayTitle);
             slotBox.addItem(row);
           });
@@ -120,6 +129,7 @@
             headerText: "Service Details",
             content: [
               new sap.m.HBox({
+                width: "100%",
                 items: [
                   new sap.m.VBox({
                     width: "100%",
@@ -135,8 +145,7 @@
                       divisionSelect
                     ]
                   })
-                ],
-                justifyContent: "SpaceBetween"
+                ]
               })
             ]
           }),
