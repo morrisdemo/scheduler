@@ -1,0 +1,143 @@
+import React, { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+
+const orderTypes = [
+  "Meter Investigation",
+  "Turn Off Meter",
+  "Turn On Meter",
+  "Meter Read",
+  "Meter/Equipment Install",
+];
+
+const divisions = ["Electric", "Gas", "Water"];
+
+const timeslots = [
+  { day: "Monday", slots: ["Morning", "Afternoon", "Evening"] },
+  { day: "Tuesday", slots: ["Morning", "Afternoon", "Evening"] },
+  { day: "Wednesday", slots: ["Morning", "Afternoon", "Evening"] },
+  { day: "Thursday", slots: ["Morning", "Afternoon", "Evening"] },
+  { day: "Friday", slots: ["Morning", "Afternoon", "Evening"] },
+];
+
+const getCriticality = (day, slot) => {
+  const code = `${day}-${slot}`;
+  if (["Monday-Morning", "Wednesday-Afternoon"].includes(code)) return "high";
+  if (["Thursday-Evening", "Friday-Afternoon"].includes(code)) return "medium";
+  return "low";
+};
+
+const getSlotTimeRange = (slot) => {
+  switch (slot) {
+    case "Morning": return "8:00 AM – 12:00 PM";
+    case "Afternoon": return "12:00 PM – 4:00 PM";
+    case "Evening": return "4:00 PM – 8:00 PM";
+    default: return "";
+  }
+};
+
+export default function ServiceOrderScheduler() {
+  const [orderType, setOrderType] = useState("");
+  const [division, setDivision] = useState("");
+  const [selectedSlot, setSelectedSlot] = useState(null);
+
+  const canSchedule = orderType && division;
+
+  const handleSlotClick = (day, slot) => {
+    setSelectedSlot(`${day} ${slot}`);
+  };
+
+  const handleSubmit = () => {
+    alert(`Service Order Scheduled:\nOrder: ${orderType}\nDivision: ${division}\nSlot: ${selectedSlot}`);
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <Card>
+        <CardContent className="space-y-4 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold mb-1 text-gray-800">Order Type</label>
+              <Select onValueChange={setOrderType}>
+                <SelectTrigger className="border border-gray-400 rounded-md shadow-sm focus:ring-2 focus:ring-primary">
+                  <SelectValue placeholder="Select Order Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {orderTypes.map((type) => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-1 text-gray-800">Division</label>
+              <Select onValueChange={setDivision}>
+                <SelectTrigger className="border border-gray-400 rounded-md shadow-sm focus:ring-2 focus:ring-primary">
+                  <SelectValue placeholder="Select Division" />
+                </SelectTrigger>
+                <SelectContent>
+                  {divisions.map((div) => (
+                    <SelectItem key={div} value={div}>{div}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {canSchedule && (
+        <Card>
+          <CardContent className="space-y-4 pt-4">
+            <h3 className="text-lg font-semibold text-gray-900">Select a Timeslot</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {timeslots.map(({ day, slots }) => (
+                <div key={day}>
+                  <h4 className="font-semibold mb-2 text-gray-900">{day}</h4>
+                  <div className="flex flex-wrap gap-3">
+                    {slots.map((slot) => {
+                      const code = `${day} ${slot}`;
+                      const criticality = getCriticality(day, slot);
+                      const isSelected = selectedSlot === code;
+
+                      const criticalClass = {
+                        low: "border-green-600",
+                        medium: "border-orange-500",
+                        high: "border-red-600",
+                      }[criticality];
+
+                      return (
+                        <button
+                          key={code}
+                          className={cn(
+                            "px-4 py-3 text-sm rounded-md font-medium border text-gray-900 hover:bg-gray-50",
+                            criticalClass,
+                            isSelected && "ring-2 ring-primary"
+                          )}
+                          onClick={() => handleSlotClick(day, slot)}
+                        >
+                          {slot}
+                          <div className="text-xs font-normal">{getSlotTimeRange(slot)}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedSlot && (
+        <div className="flex justify-end">
+          <Button onClick={handleSubmit} className="mt-4 bg-primary text-white hover:bg-primary/90 focus:ring-2 focus:ring-primary">
+            Submit Appointment
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
