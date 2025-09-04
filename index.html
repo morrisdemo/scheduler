@@ -34,6 +34,8 @@
 
       let selectedDay = "";
       let selectedSlot = "";
+      let selectedOrderType = "";
+      let selectedDivision = "";
 
       const slotTable = new sap.m.Table({
         columns: [
@@ -49,13 +51,19 @@
 
       const orderTypeSelect = new sap.m.Select({
         width: "100%",
-        change: updateButtonsVisibility
+        change: function (oEvent) {
+          selectedOrderType = oEvent.getParameter("selectedItem").getKey();
+          updateButtonsVisibility();
+        }
       });
       orderTypes.forEach(t => orderTypeSelect.addItem(new sap.ui.core.Item({ key: t, text: t })));
 
       const divisionSelect = new sap.m.Select({
         width: "100%",
-        change: updateButtonsVisibility
+        change: function (oEvent) {
+          selectedDivision = oEvent.getParameter("selectedItem").getKey();
+          updateButtonsVisibility();
+        }
       });
       divisions.forEach(d => divisionSelect.addItem(new sap.ui.core.Item({ key: d, text: d })));
 
@@ -64,7 +72,7 @@
         type: "Emphasized",
         visible: false,
         press: function () {
-          sap.m.MessageToast.show("✅ Order scheduled. Customer will be notified of assigned timeslot.");
+          sap.m.MessageToast.show(`✅ Order scheduled for ${selectedOrderType} - ${selectedDivision}. Customer will be notified of assigned timeslot.`);
         }
       });
 
@@ -92,7 +100,7 @@
       });
 
       function updateButtonsVisibility() {
-        const ready = orderTypeSelect.getSelectedKey() && divisionSelect.getSelectedKey();
+        const ready = selectedOrderType && selectedDivision;
         autoScheduleBtn.setVisible(ready);
         viewSlotsBtn.setVisible(ready);
       }
