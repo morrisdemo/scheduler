@@ -1,173 +1,191 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Service Order Scheduler - SAPUI5</title>
-    <script
-      id="sap-ui-bootstrap"
-      src="https://sdk.openui5.org/resources/sap-ui-core.js"
-      data-sap-ui-theme="sap_horizon"
-      data-sap-ui-libs="sap.m"
-      data-sap-ui-async="true"
-      data-sap-ui-onInit="module:scheduler.app"
-      data-sap-ui-resourceroots='{"scheduler": "./"}'
-    ></script>
-    <style>
-      .CriticalLow {
-        border: 2px solid #107e3e !important;
-      }
-      .CriticalMedium {
-        border: 2px solid #e9730c !important;
-      }
-      .CriticalHigh {
-        border: 2px solid #bb0000 !important;
-      }
-      .TimeSlotButton {
-        margin: 4px;
-        min-width: 140px;
-        padding: 10px;
-        border-radius: 4px;
-      }
-    </style>
-  </head>
-  <body class="sapUiBody">
-    <div id="content"></div>
-    <script id="scheduler.app" type="module">
-      sap.ui.define([
-        "sap/m/Select",
-        "sap/m/SelectListItem",
-        "sap/m/Button",
-        "sap/m/Label",
-        "sap/m/VBox",
-        "sap/m/HBox",
-        "sap/m/Page",
-        "sap/m/App",
-        "sap/m/MessageToast",
-        "sap/m/Title",
-        "sap/m/Panel",
-        "sap/ui/core/Item"
-      ], function(Select, SelectListItem, Button, Label, VBox, HBox, Page, App, MessageToast, Title, Panel, Item) {
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schedule Service Order</title>
+  <link rel="stylesheet" href="https://sdk.openui5.org/resources/sap/ui/core/themes/sap_horizon/css_variables.css">
+  <style>
+    body {
+      font-family: "72", sans-serif;
+      padding: 2rem;
+      background: var(--sapBackgroundColor);
+      color: var(--sapTextColor);
+    }
+    .card {
+      background: var(--sapTile_Background);
+      border: 1px solid var(--sapTile_BorderColor);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .field-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+    select {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid var(--sapField_BorderColor);
+      border-radius: 4px;
+      background-color: var(--sapField_Background);
+      color: var(--sapTextColor);
+    }
+    .button-bar {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .button {
+      background-color: var(--sapButton_Emphasized_Background);
+      color: var(--sapButton_Emphasized_TextColor);
+      padding: 0.5rem 1.5rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1.5rem;
+    }
+    .table th, .table td {
+      border: 1px solid var(--sapList_BorderColor);
+      padding: 0.75rem;
+      text-align: left;
+    }
+    .table th {
+      background: var(--sapList_HeaderBackground);
+    }
+    .status-low {
+      border-left: 5px solid var(--sapSuccessColor);
+    }
+    .status-medium {
+      border-left: 5px solid var(--sapWarningColor);
+    }
+    .status-high {
+      border-left: 5px solid var(--sapErrorColor);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Schedule Service Order</h2>
+    <div class="field-row">
+      <div style="flex: 1">
+        <label for="orderType">Order Type</label>
+        <select id="orderType">
+          <option value="">Select...</option>
+          <option>Meter Investigation</option>
+          <option>Turn Off Meter</option>
+          <option>Turn On Meter</option>
+          <option>Meter Read</option>
+          <option>Meter/Equipment Install</option>
+        </select>
+      </div>
+      <div style="flex: 1">
+        <label for="division">Division</label>
+        <select id="division">
+          <option value="">Select...</option>
+          <option>Electric</option>
+          <option>Gas</option>
+          <option>Water</option>
+        </select>
+      </div>
+    </div>
+    <div class="button-bar">
+      <button class="button" onclick="autoSchedule()">Auto-Schedule Order</button>
+      <button class="button" onclick="showTimeslots()">View Timeslots</button>
+    </div>
+  </div>
 
-        const orderTypes = [
-          "Meter Investigation",
-          "Turn Off Meter",
-          "Turn On Meter",
-          "Meter Read",
-          "Meter/Equipment Install"
-        ];
+  <div class="card" id="timeslotCard" style="display: none;">
+    <h3>Select a Timeslot</h3>
+    <table class="table" id="timeslotTable">
+      <thead>
+        <tr>
+          <th>Day</th>
+          <th>Slot</th>
+          <th>Time Range</th>
+          <th>Criticality</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <button class="button" onclick="submitAppointment()" style="margin-top: 1rem">Submit Appointment</button>
+  </div>
 
-        const divisions = ["Electric", "Gas", "Water"];
+  <script>
+    const criticalityMap = {
+      "Monday-Morning": "high",
+      "Wednesday-Afternoon": "high",
+      "Thursday-Evening": "medium",
+      "Friday-Afternoon": "medium"
+    };
 
-        const timeslots = [
-          "Morning (8:00–12:00)",
-          "Afternoon (12:00–4:00)",
-          "Evening (4:00–8:00)"
-        ];
+    const slotRanges = {
+      "Morning": "8:00–12:00",
+      "Afternoon": "12:00–4:00",
+      "Evening": "4:00–8:00"
+    };
 
-        const criticality = {
-          "Monday-Morning": "CriticalHigh",
-          "Wednesday-Afternoon": "CriticalHigh",
-          "Thursday-Evening": "CriticalMedium",
-          "Friday-Afternoon": "CriticalMedium"
-        };
+    let selectedDay = "";
+    let selectedSlot = "";
 
-        let selectedDay = "";
-        let selectedSlot = "";
+    function autoSchedule() {
+      const order = document.getElementById("orderType").value;
+      const div = document.getElementById("division").value;
+      if (!order || !div) return alert("Please select Order Type and Division");
+      alert(`✅ Order scheduled: ${order} (${div}). Customer will be notified of assigned timeslot.`);
+    }
 
-        const orderTypeSelect = new Select({
-          width: "100%",
-          items: orderTypes.map(type => new Item({ text: type })),
-          change: checkReady
+    function showTimeslots() {
+      const order = document.getElementById("orderType").value;
+      const div = document.getElementById("division").value;
+      if (!order || !div) return alert("Please select Order Type and Division");
+
+      const days = ["Monday","Tuesday","Wednesday","Thursday","Friday"];
+      const slots = ["Morning","Afternoon","Evening"];
+
+      const tableBody = document.getElementById("timeslotTable").querySelector("tbody");
+      tableBody.innerHTML = "";
+      days.forEach(day => {
+        slots.forEach(slot => {
+          const key = `${day}-${slot}`;
+          const crit = criticalityMap[key] || "low";
+          const tr = document.createElement("tr");
+          tr.classList.add(`status-${crit}`);
+
+          tr.innerHTML = `
+            <td>${day}</td>
+            <td>${slot}</td>
+            <td>${slotRanges[slot]}</td>
+            <td>${crit.charAt(0).toUpperCase() + crit.slice(1)}</td>
+            <td><button class="button" style="padding: 0.25rem 0.75rem; font-size: 0.9rem" onclick="selectSlot('${day}', '${slot}')">Select</button></td>
+          `;
+          tableBody.appendChild(tr);
         });
-
-        const divisionSelect = new Select({
-          width: "100%",
-          items: divisions.map(div => new Item({ text: div })),
-          change: checkReady
-        });
-
-        const slotBox = new VBox({ spacing: 1 });
-
-        function checkReady() {
-          if (orderTypeSelect.getSelectedKey() && divisionSelect.getSelectedKey()) {
-            slotBox.removeAllItems();
-            ["Monday","Tuesday","Wednesday","Thursday","Friday"].forEach(day => {
-              const dayBox = new VBox({
-                items: [new Title({ text: day, level: "H5" })]
-              });
-
-              const slotRow = new HBox({ wrap: true });
-              timeslots.forEach(label => {
-                const time = label.split(" ")[0];
-                const code = `${day}-${time}`;
-                const colorClass = criticality[code] || "CriticalLow";
-
-                const slotBtn = new Button({
-                  text: label,
-                  type: "Default",
-                  press: function () {
-                    selectedDay = day;
-                    selectedSlot = label;
-                    MessageToast.show(`Selected: ${day} ${label}`);
-                  },
-                  customData: [
-                    new sap.ui.core.CustomData({
-                      key: "styleClass",
-                      value: `TimeSlotButton ${colorClass}`,
-                      writeToDom: true
-                    })
-                  ]
-                });
-                slotRow.addItem(slotBtn);
-              });
-              dayBox.addItem(slotRow);
-              slotBox.addItem(dayBox);
-            });
-          }
-        }
-
-        const submitButton = new Button({
-          text: "Submit Appointment",
-          type: "Emphasized",
-          press: function() {
-            if (!selectedDay || !selectedSlot) {
-              MessageToast.show("Please select a timeslot.");
-              return;
-            }
-            MessageToast.show(`Scheduled: ${orderTypeSelect.getSelectedKey()} | ${divisionSelect.getSelectedKey()} | ${selectedDay} ${selectedSlot}`);
-          }
-        });
-
-        const page = new Page({
-          title: "Schedule Service Order",
-          content: [
-            new VBox({
-              width: "100%",
-              items: [
-                new Panel({
-                  headerText: "Service Details",
-                  expandable: false,
-                  content: [
-                    new Label({ text: "Order Type" }),
-                    orderTypeSelect,
-                    new Label({ text: "Division" }),
-                    divisionSelect
-                  ]
-                }),
-                new Panel({
-                  headerText: "Available Timeslots",
-                  expandable: false,
-                  content: [slotBox]
-                }),
-                submitButton
-              ]
-            })
-          ]
-        });
-
-        const app = new App({ pages: [page] });
-        app.placeAt("content");
       });
-    </script>
-  </body>
+      document.getElementById("timeslotCard").style.display = "block";
+    }
+
+    function selectSlot(day, slot) {
+      selectedDay = day;
+      selectedSlot = slot;
+      alert(`Selected: ${day} ${slot}`);
+    }
+
+    function submitAppointment() {
+      if (!selectedDay || !selectedSlot) return alert("⚠️ Please select a timeslot.");
+      alert(`✅ Appointment confirmed: ${selectedDay} ${selectedSlot}`);
+    }
+  </script>
+</body>
 </html>
