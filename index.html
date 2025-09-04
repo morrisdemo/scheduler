@@ -1,173 +1,144 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Service Order Scheduler - SAPUI5</title>
-    <script
-      id="sap-ui-bootstrap"
-      src="https://sdk.openui5.org/resources/sap-ui-core.js"
-      data-sap-ui-theme="sap_horizon"
-      data-sap-ui-libs="sap.m"
-      data-sap-ui-async="true"
-      data-sap-ui-onInit="module:scheduler.app"
-      data-sap-ui-resourceroots='{"scheduler": "./"}'
-    ></script>
-    <style>
-      .CriticalLow {
-        border: 2px solid #107e3e !important;
-      }
-      .CriticalMedium {
-        border: 2px solid #e9730c !important;
-      }
-      .CriticalHigh {
-        border: 2px solid #bb0000 !important;
-      }
-      .TimeSlotButton {
-        margin: 4px;
-        min-width: 140px;
-        padding: 10px;
-        border-radius: 4px;
-      }
-    </style>
-  </head>
-  <body class="sapUiBody">
-    <div id="content"></div>
-    <script id="scheduler.app" type="module">
-      sap.ui.define([
-        "sap/m/Select",
-        "sap/m/SelectListItem",
-        "sap/m/Button",
-        "sap/m/Label",
-        "sap/m/VBox",
-        "sap/m/HBox",
-        "sap/m/Page",
-        "sap/m/App",
-        "sap/m/MessageToast",
-        "sap/m/Title",
-        "sap/m/Panel",
-        "sap/ui/core/Item"
-      ], function(Select, SelectListItem, Button, Label, VBox, HBox, Page, App, MessageToast, Title, Panel, Item) {
+<head>
+  <meta charset="UTF-8" />
+  <title>Service Order Scheduler - SAPUI5</title>
+  <script
+    id="sap-ui-bootstrap"
+    src="https://sdk.openui5.org/resources/sap-ui-core.js"
+    data-sap-ui-theme="sap_horizon"
+    data-sap-ui-libs="sap.m"
+    data-sap-ui-async="false"
+    data-sap-ui-onInit="module:scheduler.app"
+    data-sap-ui-resourceroots='{"scheduler": "./"}'
+  ></script>
+  <style>
+    .CriticalLow {
+      border: 2px solid #107e3e !important;
+    }
+    .CriticalMedium {
+      border: 2px solid #e9730c !important;
+    }
+    .CriticalHigh {
+      border: 2px solid #bb0000 !important;
+    }
+    .TimeSlotButton {
+      margin: 4px;
+      min-width: 140px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="sapUiBody">
+  <div id="content"></div>
+  <script>
+    sap.ui.getCore().attachInit(function () {
+      const orderTypes = [
+        "Meter Investigation",
+        "Turn Off Meter",
+        "Turn On Meter",
+        "Meter Read",
+        "Meter/Equipment Install"
+      ];
 
-        const orderTypes = [
-          "Meter Investigation",
-          "Turn Off Meter",
-          "Turn On Meter",
-          "Meter Read",
-          "Meter/Equipment Install"
-        ];
+      const divisions = ["Electric", "Gas", "Water"];
 
-        const divisions = ["Electric", "Gas", "Water"];
+      const timeslots = [
+        "Morning (8:00–12:00)",
+        "Afternoon (12:00–4:00)",
+        "Evening (4:00–8:00)"
+      ];
 
-        const timeslots = [
-          "Morning (8:00–12:00)",
-          "Afternoon (12:00–4:00)",
-          "Evening (4:00–8:00)"
-        ];
+      const criticality = {
+        "Monday-Morning": "CriticalHigh",
+        "Wednesday-Afternoon": "CriticalHigh",
+        "Thursday-Evening": "CriticalMedium",
+        "Friday-Afternoon": "CriticalMedium"
+      };
 
-        const criticality = {
-          "Monday-Morning": "CriticalHigh",
-          "Wednesday-Afternoon": "CriticalHigh",
-          "Thursday-Evening": "CriticalMedium",
-          "Friday-Afternoon": "CriticalMedium"
-        };
+      let selectedDay = "";
+      let selectedSlot = "";
 
-        let selectedDay = "";
-        let selectedSlot = "";
-
-        const orderTypeSelect = new Select({
-          width: "100%",
-          items: orderTypes.map(type => new Item({ text: type })),
-          change: checkReady
-        });
-
-        const divisionSelect = new Select({
-          width: "100%",
-          items: divisions.map(div => new Item({ text: div })),
-          change: checkReady
-        });
-
-        const slotBox = new VBox({ spacing: 1 });
-
-        function checkReady() {
-          if (orderTypeSelect.getSelectedKey() && divisionSelect.getSelectedKey()) {
-            slotBox.removeAllItems();
-            ["Monday","Tuesday","Wednesday","Thursday","Friday"].forEach(day => {
-              const dayBox = new VBox({
-                items: [new Title({ text: day, level: "H5" })]
-              });
-
-              const slotRow = new HBox({ wrap: true });
-              timeslots.forEach(label => {
-                const time = label.split(" ")[0];
-                const code = `${day}-${time}`;
-                const colorClass = criticality[code] || "CriticalLow";
-
-                const slotBtn = new Button({
-                  text: label,
-                  type: "Default",
-                  press: function () {
-                    selectedDay = day;
-                    selectedSlot = label;
-                    MessageToast.show(`Selected: ${day} ${label}`);
-                  },
-                  customData: [
-                    new sap.ui.core.CustomData({
-                      key: "styleClass",
-                      value: `TimeSlotButton ${colorClass}`,
-                      writeToDom: true
-                    })
-                  ]
-                });
-                slotRow.addItem(slotBtn);
-              });
-              dayBox.addItem(slotRow);
-              slotBox.addItem(dayBox);
-            });
-          }
-        }
-
-        const submitButton = new Button({
-          text: "Submit Appointment",
-          type: "Emphasized",
-          press: function() {
-            if (!selectedDay || !selectedSlot) {
-              MessageToast.show("Please select a timeslot.");
-              return;
-            }
-            MessageToast.show(`Scheduled: ${orderTypeSelect.getSelectedKey()} | ${divisionSelect.getSelectedKey()} | ${selectedDay} ${selectedSlot}`);
-          }
-        });
-
-        const page = new Page({
-          title: "Schedule Service Order",
-          content: [
-            new VBox({
-              width: "100%",
-              items: [
-                new Panel({
-                  headerText: "Service Details",
-                  expandable: false,
-                  content: [
-                    new Label({ text: "Order Type" }),
-                    orderTypeSelect,
-                    new Label({ text: "Division" }),
-                    divisionSelect
-                  ]
-                }),
-                new Panel({
-                  headerText: "Available Timeslots",
-                  expandable: false,
-                  content: [slotBox]
-                }),
-                submitButton
-              ]
-            })
-          ]
-        });
-
-        const app = new App({ pages: [page] });
-        app.placeAt("content");
+      const orderTypeSelect = new sap.m.Select({
+        width: "100%",
+        items: orderTypes.map(t => new sap.ui.core.Item({ text: t })),
+        change: checkReady
       });
-    </script>
-  </body>
+
+      const divisionSelect = new sap.m.Select({
+        width: "100%",
+        items: divisions.map(d => new sap.ui.core.Item({ text: d })),
+        change: checkReady
+      });
+
+      const slotBox = new sap.m.VBox({ spacing: 1 });
+
+      function checkReady() {
+        if (orderTypeSelect.getSelectedKey() && divisionSelect.getSelectedKey()) {
+          slotBox.removeAllItems();
+          ["Monday","Tuesday","Wednesday","Thursday","Friday"].forEach(day => {
+            const dayTitle = new sap.m.Title({ text: day, level: "H5" });
+            const row = new sap.m.HBox({ wrap: true });
+            timeslots.forEach(label => {
+              const time = label.split(" ")[0];
+              const code = `${day}-${time}`;
+              const className = criticality[code] || "CriticalLow";
+              const btn = new sap.m.Button({
+                text: label,
+                type: "Default",
+                press: function () {
+                  selectedDay = day;
+                  selectedSlot = label;
+                  sap.m.MessageToast.show(`Selected: ${day} ${label}`);
+                }
+              });
+              btn.addStyleClass("TimeSlotButton");
+              btn.addStyleClass(className);
+              row.addItem(btn);
+            });
+            slotBox.addItem(dayTitle);
+            slotBox.addItem(row);
+          });
+        }
+      }
+
+      const submitButton = new sap.m.Button({
+        text: "Submit Appointment",
+        type: "Emphasized",
+        press: function () {
+          if (!selectedDay || !selectedSlot) {
+            sap.m.MessageToast.show("Please select a timeslot.");
+            return;
+          }
+          sap.m.MessageToast.show(`Scheduled: ${orderTypeSelect.getSelectedKey()} | ${divisionSelect.getSelectedKey()} | ${selectedDay} ${selectedSlot}`);
+        }
+      });
+
+      const page = new sap.m.Page({
+        title: "Schedule Service Order",
+        content: [
+          new sap.m.Panel({
+            headerText: "Service Details",
+            content: [
+              new sap.m.Label({ text: "Order Type" }),
+              orderTypeSelect,
+              new sap.m.Label({ text: "Division" }),
+              divisionSelect
+            ]
+          }),
+          new sap.m.Panel({
+            headerText: "Available Timeslots",
+            content: [slotBox]
+          }),
+          submitButton
+        ]
+      });
+
+      const app = new sap.m.App({ pages: [page] });
+      app.placeAt("content");
+    });
+  </script>
+</body>
 </html>
+
