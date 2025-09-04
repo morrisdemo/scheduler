@@ -10,26 +10,6 @@
     data-sap-ui-libs="sap.m"
     data-sap-ui-async="false"
   ></script>
-  <style>
-    .CriticalLow {
-      border: 2px solid #107e3e !important;
-    }
-    .CriticalMedium {
-      border: 2px solid #e9730c !important;
-    }
-    .CriticalHigh {
-      border: 2px solid #bb0000 !important;
-    }
-    .TimeSlotButton {
-      margin: 4px;
-      min-width: 160px;
-      padding: 12px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-  </style>
 </head>
 <body class="sapUiBody">
   <div id="content"></div>
@@ -45,60 +25,60 @@
 
       const divisions = ["Electric", "Gas", "Water"];
 
-      const timeslots = [
-        "Morning (8:00–12:00)",
-        "Afternoon (12:00–4:00)",
-        "Evening (4:00–8:00)"
-      ];
-
-      const criticality = {
-        "Monday-Morning": "CriticalHigh",
-        "Wednesday-Afternoon": "CriticalHigh",
-        "Thursday-Evening": "CriticalMedium",
-        "Friday-Afternoon": "CriticalMedium"
+      const criticalityMap = {
+        "Monday-Morning": "High",
+        "Wednesday-Afternoon": "High",
+        "Thursday-Evening": "Medium",
+        "Friday-Afternoon": "Medium"
       };
 
       let selectedDay = "";
       let selectedSlot = "";
 
-      const slotBox = new sap.m.VBox({ spacing: 1, visible: false });
+      const slotTable = new sap.m.Table({
+        columns: [
+          new sap.m.Column({ header: new sap.m.Label({ text: "Day" }) }),
+          new sap.m.Column({ header: new sap.m.Label({ text: "Slot" }) }),
+          new sap.m.Column({ header: new sap.m.Label({ text: "Time Range" }) }),
+          new sap.m.Column({ header: new sap.m.Label({ text: "Criticality" }) }),
+          new sap.m.Column({ header: new sap.m.Label({ text: "Action" }) })
+        ],
+        visible: false,
+        growing: true
+      });
 
       const orderTypeSelect = new sap.m.Select({
         width: "100%",
-        change: updateButtonVisibility
+        change: updateButtonsVisibility
       });
-      orderTypes.forEach(t => {
-        orderTypeSelect.addItem(new sap.ui.core.Item({ key: t, text: t }));
-      });
+      orderTypes.forEach(t => orderTypeSelect.addItem(new sap.ui.core.Item({ key: t, text: t })));
 
       const divisionSelect = new sap.m.Select({
         width: "100%",
-        change: updateButtonVisibility
+        change: updateButtonsVisibility
       });
-      divisions.forEach(d => {
-        divisionSelect.addItem(new sap.ui.core.Item({ key: d, text: d }));
-      });
+      divisions.forEach(d => divisionSelect.addItem(new sap.ui.core.Item({ key: d, text: d })));
 
-      const autoButton = new sap.m.Button({
+      const autoScheduleBtn = new sap.m.Button({
         text: "Auto-Schedule Order",
         type: "Emphasized",
-        visible: true,
+        visible: false,
         press: function () {
           sap.m.MessageToast.show("✅ Order scheduled. Customer will be notified of assigned timeslot.");
         }
       });
 
-      const viewSlotsButton = new sap.m.Button({
+      const viewSlotsBtn = new sap.m.Button({
         text: "View Timeslots",
         type: "Default",
-        visible: true,
+        visible: false,
         press: function () {
-          buildTimeslots();
-          slotBox.setVisible(true);
+          buildTimeslotTable();
+          slotTable.setVisible(true);
         }
       });
 
-      const submitButton = new sap.m.Button({
+      const submitBtn = new sap.m.Button({
         text: "Submit Appointment",
         type: "Accept",
         visible: false,
@@ -111,44 +91,47 @@
         }
       });
 
-      function updateButtonVisibility() {
-        const hasOrder = orderTypeSelect.getSelectedKey();
-        const hasDivision = divisionSelect.getSelectedKey();
-        const show = hasOrder && hasDivision;
-        autoButton.setVisible(show);
-        viewSlotsButton.setVisible(show);
+      function updateButtonsVisibility() {
+        const ready = orderTypeSelect.getSelectedKey() && divisionSelect.getSelectedKey();
+        autoScheduleBtn.setVisible(ready);
+        viewSlotsBtn.setVisible(ready);
       }
 
-      function buildTimeslots() {
-        slotBox.removeAllItems();
-        ["Monday","Tuesday","Wednesday","Thursday","Friday"].forEach(day => {
-          const dayTitle = new sap.m.Title({ text: day, level: "H5" });
-          const row = new sap.m.HBox({ wrap: true });
+      function buildTimeslotTable() {
+        slotTable.removeAllItems();
+        const days = ["Monday","Tuesday","Wednesday","Thursday","Friday"];
+        const slots = [
+          { name: "Morning", range: "8:00–12:00" },
+          { name: "Afternoon", range: "12:00–4:00" },
+          { name: "Evening", range: "4:00–8:00" }
+        ];
 
-          timeslots.forEach(label => {
-            const time = label.split(" ")[0];
-            const code = `${day}-${time}`;
-            const className = criticality[code] || "CriticalLow";
-
-            const btn = new sap.m.Button({
-              text: label,
-              icon: className === "CriticalHigh" ? "sap-icon://alert" : className === "CriticalMedium" ? "sap-icon://warning" : "sap-icon://appointment",
-              iconFirst: true,
-              type: "Default",
-              press: function () {
-                selectedDay = day;
-                selectedSlot = label;
-                submitButton.setVisible(true);
-                sap.m.MessageToast.show(`Selected: ${day} ${label}`);
-              }
+        days.forEach(day => {
+          slots.forEach(slot => {
+            const code = `${day}-${slot.name}`;
+            const crit = criticalityMap[code] || "Low";
+            const row = new sap.m.ColumnListItem({
+              cells: [
+                new sap.m.Text({ text: day }),
+                new sap.m.Text({ text: slot.name }),
+                new sap.m.Text({ text: slot.range }),
+                new sap.m.ObjectStatus({
+                  text: crit,
+                  state: crit === "High" ? "Error" : crit === "Medium" ? "Warning" : "Success"
+                }),
+                new sap.m.Button({
+                  text: "Select",
+                  press: function () {
+                    selectedDay = day;
+                    selectedSlot = `${slot.name} (${slot.range})`;
+                    submitBtn.setVisible(true);
+                    sap.m.MessageToast.show(`Selected: ${day} ${selectedSlot}`);
+                  }
+                })
+              ]
             });
-            btn.addStyleClass("TimeSlotButton");
-            btn.addStyleClass(className);
-            row.addItem(btn);
+            slotTable.addItem(row);
           });
-
-          slotBox.addItem(dayTitle);
-          slotBox.addItem(row);
         });
       }
 
@@ -159,21 +142,14 @@
             headerText: "Service Details",
             content: [
               new sap.m.HBox({
-                width: "100%",
                 items: [
                   new sap.m.VBox({
                     width: "100%",
-                    items: [
-                      new sap.m.Label({ text: "Order Type" }),
-                      orderTypeSelect
-                    ]
+                    items: [new sap.m.Label({ text: "Order Type" }), orderTypeSelect]
                   }),
                   new sap.m.VBox({
                     width: "100%",
-                    items: [
-                      new sap.m.Label({ text: "Division" }),
-                      divisionSelect
-                    ]
+                    items: [new sap.m.Label({ text: "Division" }), divisionSelect]
                   })
                 ]
               })
@@ -182,18 +158,17 @@
           new sap.m.HBox({
             alignItems: "Center",
             justifyContent: "SpaceBetween",
-            items: [autoButton, viewSlotsButton]
+            items: [autoScheduleBtn, viewSlotsBtn]
           }),
           new sap.m.Panel({
             headerText: "Available Timeslots",
-            content: [slotBox]
+            content: [slotTable]
           }),
-          submitButton
+          submitBtn
         ]
       });
 
-      const app = new sap.m.App({ pages: [page] });
-      app.placeAt("content");
+      new sap.m.App({ pages: [page] }).placeAt("content");
     });
   </script>
 </body>
