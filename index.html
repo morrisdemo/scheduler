@@ -1,191 +1,144 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Schedule Service Order</title>
-  <link rel="stylesheet" href="https://sdk.openui5.org/resources/sap/ui/core/themes/sap_horizon/css_variables.css">
-  <style>
-    body {
-      font-family: "72", sans-serif;
-      padding: 2rem;
-      background: var(--sapBackgroundColor);
-      color: var(--sapTextColor);
-    }
-    .card {
-      background: var(--sapTile_Background);
-      border: 1px solid var(--sapTile_BorderColor);
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin-bottom: 2rem;
-    }
-    .field-row {
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-    label {
-      font-weight: bold;
-      display: block;
-      margin-bottom: 0.3rem;
-    }
-    select {
-      width: 100%;
-      padding: 0.5rem;
-      border: 1px solid var(--sapField_BorderColor);
-      border-radius: 4px;
-      background-color: var(--sapField_Background);
-      color: var(--sapTextColor);
-    }
-    .button-bar {
-      display: flex;
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-    .button {
-      background-color: var(--sapButton_Emphasized_Background);
-      color: var(--sapButton_Emphasized_TextColor);
-      padding: 0.5rem 1.5rem;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1.5rem;
-    }
-    .table th, .table td {
-      border: 1px solid var(--sapList_BorderColor);
-      padding: 0.75rem;
-      text-align: left;
-    }
-    .table th {
-      background: var(--sapList_HeaderBackground);
-    }
-    .status-low {
-      border-left: 5px solid var(--sapSuccessColor);
-    }
-    .status-medium {
-      border-left: 5px solid var(--sapWarningColor);
-    }
-    .status-high {
-      border-left: 5px solid var(--sapErrorColor);
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h2>Schedule Service Order</h2>
-    <div class="field-row">
-      <div style="flex: 1">
-        <label for="orderType">Order Type</label>
-        <select id="orderType">
-          <option value="">Select...</option>
-          <option>Meter Investigation</option>
-          <option>Turn Off Meter</option>
-          <option>Turn On Meter</option>
-          <option>Meter Read</option>
-          <option>Meter/Equipment Install</option>
-        </select>
-      </div>
-      <div style="flex: 1">
-        <label for="division">Division</label>
-        <select id="division">
-          <option value="">Select...</option>
-          <option>Electric</option>
-          <option>Gas</option>
-          <option>Water</option>
-        </select>
-      </div>
+import React, { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+
+const orderTypes = [
+  "Meter Investigation",
+  "Turn Off Meter",
+  "Turn On Meter",
+  "Meter Read",
+  "Meter/Equipment Install",
+];
+
+const divisions = ["Electric", "Gas", "Water"];
+
+const timeslots = [
+  { day: "Monday", slots: ["Morning", "Afternoon", "Evening"] },
+  { day: "Tuesday", slots: ["Morning", "Afternoon", "Evening"] },
+  { day: "Wednesday", slots: ["Morning", "Afternoon", "Evening"] },
+  { day: "Thursday", slots: ["Morning", "Afternoon", "Evening"] },
+  { day: "Friday", slots: ["Morning", "Afternoon", "Evening"] },
+];
+
+const getCriticality = (day, slot) => {
+  const code = `${day}-${slot}`;
+  if (["Monday-Morning", "Wednesday-Afternoon"].includes(code)) return "high";
+  if (["Thursday-Evening", "Friday-Afternoon"].includes(code)) return "medium";
+  return "low";
+};
+
+const getSlotTimeRange = (slot) => {
+  switch (slot) {
+    case "Morning": return "8:00 AM – 12:00 PM";
+    case "Afternoon": return "12:00 PM – 4:00 PM";
+    case "Evening": return "4:00 PM – 8:00 PM";
+    default: return "";
+  }
+};
+
+export default function ServiceOrderScheduler() {
+  const [orderType, setOrderType] = useState("");
+  const [division, setDivision] = useState("");
+  const [selectedSlot, setSelectedSlot] = useState(null);
+
+  const canSchedule = orderType && division;
+
+  const handleSlotClick = (day, slot) => {
+    setSelectedSlot(`${day} ${slot}`);
+  };
+
+  const handleSubmit = () => {
+    alert(`Service Order Scheduled:\nOrder: ${orderType}\nDivision: ${division}\nSlot: ${selectedSlot}`);
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <Card>
+        <CardContent className="space-y-4 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold mb-1 text-gray-800">Order Type</label>
+              <Select onValueChange={setOrderType}>
+                <SelectTrigger className="border border-gray-400 rounded-md shadow-sm focus:ring-2 focus:ring-primary">
+                  <SelectValue placeholder="Select Order Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {orderTypes.map((type) => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-1 text-gray-800">Division</label>
+              <Select onValueChange={setDivision}>
+                <SelectTrigger className="border border-gray-400 rounded-md shadow-sm focus:ring-2 focus:ring-primary">
+                  <SelectValue placeholder="Select Division" />
+                </SelectTrigger>
+                <SelectContent>
+                  {divisions.map((div) => (
+                    <SelectItem key={div} value={div}>{div}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {canSchedule && (
+        <Card>
+          <CardContent className="space-y-4 pt-4">
+            <h3 className="text-lg font-semibold text-gray-900">Select a Timeslot</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {timeslots.map(({ day, slots }) => (
+                <div key={day}>
+                  <h4 className="font-semibold mb-2 text-gray-900">{day}</h4>
+                  <div className="flex flex-wrap gap-3">
+                    {slots.map((slot) => {
+                      const code = `${day} ${slot}`;
+                      const criticality = getCriticality(day, slot);
+                      const isSelected = selectedSlot === code;
+
+                      const criticalClass = {
+                        low: "border-green-600",
+                        medium: "border-orange-500",
+                        high: "border-red-600",
+                      }[criticality];
+
+                      return (
+                        <button
+                          key={code}
+                          className={cn(
+                            "px-4 py-3 text-sm rounded-md font-medium border text-gray-900 hover:bg-gray-50",
+                            criticalClass,
+                            isSelected && "ring-2 ring-primary"
+                          )}
+                          onClick={() => handleSlotClick(day, slot)}
+                        >
+                          {slot}
+                          <div className="text-xs font-normal">{getSlotTimeRange(slot)}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedSlot && (
+        <div className="flex justify-end">
+          <Button onClick={handleSubmit} className="mt-4 bg-primary text-white hover:bg-primary/90 focus:ring-2 focus:ring-primary">
+            Submit Appointment
+          </Button>
+        </div>
+      )}
     </div>
-    <div class="button-bar">
-      <button class="button" onclick="autoSchedule()">Auto-Schedule Order</button>
-      <button class="button" onclick="showTimeslots()">View Timeslots</button>
-    </div>
-  </div>
+  );
+}
 
-  <div class="card" id="timeslotCard" style="display: none;">
-    <h3>Select a Timeslot</h3>
-    <table class="table" id="timeslotTable">
-      <thead>
-        <tr>
-          <th>Day</th>
-          <th>Slot</th>
-          <th>Time Range</th>
-          <th>Criticality</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <button class="button" onclick="submitAppointment()" style="margin-top: 1rem">Submit Appointment</button>
-  </div>
-
-  <script>
-    const criticalityMap = {
-      "Monday-Morning": "high",
-      "Wednesday-Afternoon": "high",
-      "Thursday-Evening": "medium",
-      "Friday-Afternoon": "medium"
-    };
-
-    const slotRanges = {
-      "Morning": "8:00–12:00",
-      "Afternoon": "12:00–4:00",
-      "Evening": "4:00–8:00"
-    };
-
-    let selectedDay = "";
-    let selectedSlot = "";
-
-    function autoSchedule() {
-      const order = document.getElementById("orderType").value;
-      const div = document.getElementById("division").value;
-      if (!order || !div) return alert("Please select Order Type and Division");
-      alert(`✅ Order scheduled: ${order} (${div}). Customer will be notified of assigned timeslot.`);
-    }
-
-    function showTimeslots() {
-      const order = document.getElementById("orderType").value;
-      const div = document.getElementById("division").value;
-      if (!order || !div) return alert("Please select Order Type and Division");
-
-      const days = ["Monday","Tuesday","Wednesday","Thursday","Friday"];
-      const slots = ["Morning","Afternoon","Evening"];
-
-      const tableBody = document.getElementById("timeslotTable").querySelector("tbody");
-      tableBody.innerHTML = "";
-      days.forEach(day => {
-        slots.forEach(slot => {
-          const key = `${day}-${slot}`;
-          const crit = criticalityMap[key] || "low";
-          const tr = document.createElement("tr");
-          tr.classList.add(`status-${crit}`);
-
-          tr.innerHTML = `
-            <td>${day}</td>
-            <td>${slot}</td>
-            <td>${slotRanges[slot]}</td>
-            <td>${crit.charAt(0).toUpperCase() + crit.slice(1)}</td>
-            <td><button class="button" style="padding: 0.25rem 0.75rem; font-size: 0.9rem" onclick="selectSlot('${day}', '${slot}')">Select</button></td>
-          `;
-          tableBody.appendChild(tr);
-        });
-      });
-      document.getElementById("timeslotCard").style.display = "block";
-    }
-
-    function selectSlot(day, slot) {
-      selectedDay = day;
-      selectedSlot = slot;
-      alert(`Selected: ${day} ${slot}`);
-    }
-
-    function submitAppointment() {
-      if (!selectedDay || !selectedSlot) return alert("⚠️ Please select a timeslot.");
-      alert(`✅ Appointment confirmed: ${selectedDay} ${selectedSlot}`);
-    }
-  </script>
-</body>
-</html>
