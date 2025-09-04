@@ -22,9 +22,12 @@
     }
     .TimeSlotButton {
       margin: 4px;
-      min-width: 140px;
-      padding: 10px;
-      border-radius: 4px;
+      min-width: 160px;
+      padding: 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
   </style>
 </head>
@@ -79,16 +82,16 @@
       const autoButton = new sap.m.Button({
         text: "Auto-Schedule Order",
         type: "Emphasized",
-        visible: false,
+        visible: true,
         press: function () {
-          sap.m.MessageToast.show("Order has been scheduled. The customer will be notified which timeslot the utility will arrive.");
+          sap.m.MessageToast.show("✅ Order scheduled. Customer will be notified of assigned timeslot.");
         }
       });
 
       const viewSlotsButton = new sap.m.Button({
         text: "View Timeslots",
         type: "Default",
-        visible: false,
+        visible: true,
         press: function () {
           buildTimeslots();
           slotBox.setVisible(true);
@@ -101,10 +104,10 @@
         visible: false,
         press: function () {
           if (!selectedDay || !selectedSlot) {
-            sap.m.MessageToast.show("Please select a timeslot.");
+            sap.m.MessageToast.show("⚠️ Please select a timeslot.");
             return;
           }
-          sap.m.MessageToast.show(`Order submitted for: ${orderTypeSelect.getSelectedKey()} | ${divisionSelect.getSelectedKey()} | ${selectedDay} ${selectedSlot}`);
+          sap.m.MessageToast.show(`✅ Appointment confirmed: ${selectedDay} ${selectedSlot}`);
         }
       });
 
@@ -126,8 +129,11 @@
             const time = label.split(" ")[0];
             const code = `${day}-${time}`;
             const className = criticality[code] || "CriticalLow";
+
             const btn = new sap.m.Button({
               text: label,
+              icon: className === "CriticalHigh" ? "sap-icon://alert" : className === "CriticalMedium" ? "sap-icon://warning" : "sap-icon://appointment",
+              iconFirst: true,
               type: "Default",
               press: function () {
                 selectedDay = day;
