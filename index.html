@@ -9,8 +9,6 @@
     data-sap-ui-theme="sap_horizon"
     data-sap-ui-libs="sap.m"
     data-sap-ui-async="false"
-    data-sap-ui-onInit="module:scheduler.app"
-    data-sap-ui-resourceroots='{"scheduler": "./"}'
   ></script>
   <style>
     .CriticalLow {
@@ -75,7 +73,7 @@
       const slotBox = new sap.m.VBox({ spacing: 1 });
 
       function checkReady() {
-        if (orderTypeSelect.getSelectedKey() && divisionSelect.getSelectedKey()) {
+        if (orderTypeSelect.getSelectedItem() && divisionSelect.getSelectedItem()) {
           slotBox.removeAllItems();
           ["Monday","Tuesday","Wednesday","Thursday","Friday"].forEach(day => {
             const dayTitle = new sap.m.Title({ text: day, level: "H5" });
@@ -121,10 +119,25 @@
           new sap.m.Panel({
             headerText: "Service Details",
             content: [
-              new sap.m.Label({ text: "Order Type" }),
-              orderTypeSelect,
-              new sap.m.Label({ text: "Division" }),
-              divisionSelect
+              new sap.m.HBox({
+                items: [
+                  new sap.m.VBox({
+                    width: "100%",
+                    items: [
+                      new sap.m.Label({ text: "Order Type" }),
+                      orderTypeSelect
+                    ]
+                  }),
+                  new sap.m.VBox({
+                    width: "100%",
+                    items: [
+                      new sap.m.Label({ text: "Division" }),
+                      divisionSelect
+                    ]
+                  })
+                ],
+                justifyContent: "SpaceBetween"
+              })
             ]
           }),
           new sap.m.Panel({
@@ -141,4 +154,3 @@
   </script>
 </body>
 </html>
-
